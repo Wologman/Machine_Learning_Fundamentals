@@ -47,3 +47,8 @@ If I want to both estimate model performance, and do hyperparameter optimisation
 - Use k-fold cross validation on one fold only.  This could be helpful for imbalanced datasets, and is no worse than just a standard train:val:test approach in terms of train dataset size.  So good practice, for example in my predator classification problem.
 - No CV, just train:val:test.  OK if dataset is really large & imbalance isn't an issue.
 - Nested k-fold for train, val & test.  Do this if working with a small/imbalanced dataset & accurate performance estimate is required as well as model selection.
+
+### Kaggle Submissions
+
+Since we get to chose two final submissions.  A good strategy is to chose one that has the best local CV score, and one that has the best score on the public leaderboard.
+
