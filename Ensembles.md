@@ -16,7 +16,7 @@ For a classification problem, a simple method to blend an odd number of classifi
 - Independent/uncorrelated predictions from each
 - Use of individual knowledge for any or all of the classifiers
 
-The individual models can all be fitted with the same data `VotingClassifier` from skLearn
+The individual models can all be fitted with the same data in a single step using `VotingClassifier` module from scikit-learn.
 
 ```python
 # Instantiate the individual models
