@@ -30,6 +30,21 @@ estimators=[('knn', clf_knn), ('lr', clf_lr), ('dt', clf_dt)])
 clf_vote.fit(X_train, y_train)
 ```
 
+## Averaging (soft voting)
+The syntax is the same, to make a voting classifier, just specify the voting parameter `voting='soft'`
+
+For classification problems, the probabilities will be averaged
+For regression problems, the mean prediction will be used.
+
+## Bagging
+
+This is a technique for use with 'weak' models.  By which we mean models that meet these criteria
+
+- Performance better than random guessing, but not very much better
+- Light weight
+- Fast
+
+
 ## Model Stacking
 
 Split the test data into `train_1` & `train_2`.  With `train_1` train a bunch of different models.  
