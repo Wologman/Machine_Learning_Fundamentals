@@ -200,12 +200,32 @@ clf_gbm = gbm(n_estimators=100, # default
 
 For regression use `GradientBoostingRegressor`, the rest is the same.
 
-#### XGBoost
+#### XGBoost 
+- Optimised for GPU computing
+- Parallel processing for each estimator.  Not sure how this is actually achieved given the nature of boosting being sequential!  I guess you can still do all the previously created ones in parallel with each iteration?
+
+Usage similar to the others from scikit-learn, though there is no default `learning-rate` or `max_depth`
+
+
+```python
+import xgboost as xgb
+
+clf_xgb = xgb.XGBClassifier(
+		n_estimators=100,
+		learning_rate=None,
+		max_depth=None,
+		random_state					
+		)
+
+clg_xgb.fit(X_train, y_train)
+pred = clf_xgb.predict(X_test)
+```
 
 #### LightGBM
+Developed by Microsoft in 2017  It is lighter and faster than XGBoost.  Usage is the same as XGboost, except that by default `max_depth=-1`, meaning that it is unlimited.  Consider LightGBM for problems with memory or speed constraints.
 
 #### CatBoost
-
+Open sourced by Yandex in 2017.  Has built in handling of categorical features.  Same advantages as above.  This has been getting more dominant lately in ML competitions, I shoudl give it a try on my Housing Prediction Kaggle benchmark.  Usage is similar, except that no default values at all for the parameters.
 
 ## Model Stacking
 Split the test data into `train_1` & `train_2`.  With `train_1` train a bunch of different models.  
@@ -214,3 +234,37 @@ train_1, train_2 = train_test_split(train_ids, test_size=0.5, random_state=123)
 ```
 
 With `train_2` use those model outputs as features for the new model.   For example (1) could be a CNN classification with a bunch of different networks.  (2) could use XGBoost or some other tree method to combine the predictions.  That's a pretty neat idea, I'm going to try it some time in a Kaggle comp.
+
+scikit-learn has a built in stacking module.  Usage:
+```python
+from sklearn.ensemble import StackingClassifier
+
+# A list of tupples of the leel-1 estimators
+classifiers = [('clf_1', Classifier1(Params1)), 
+			   ('clf_2', Classifier2(Params2))... ]
+
+# Instantiate the second level classifier
+clf_meta = ClassifierMeta(ParamsMeta)
+
+clf_stack = StackingClassifier(estimators=classifiers,
+							  final_estimator=clf_meta,
+							  cv=5 # Number of CV folds
+							  stack_method='predict_proba' # Default = auto
+							  passthrough=False)
+```
+`passthrough` is the option to use the original features for the final classifier also.  The stack method could be probabilities, or by default 'auto', which in this case would be class labels.
+
+Similar usage for `StackingRegressor` except that there is no `stack_method`, it is regression by definition.
+
+### The MLxtend Library
+
+This is a third party module, it is lighter and faster but works in a similar syntax to scikit-learn:
+```python
+from mlxtend.classifier import StackingClassifier
+clf_stack = StackingClassifier(classifiers=[clf1, clf2.....]
+							   meta_classifier=clf_meta,
+							   use_probas=False # default
+							   use_features_in_secondary=False # default
+								)
+```
+The only difference I can see is that there is no cross validation, the individual estimators are each trained with the entire feature set.  There is also a regressor option.
