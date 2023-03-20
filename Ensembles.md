@@ -1,5 +1,4 @@
 ## Model Blending
-
 Simply take all the models and combine their predictions in some sensible way.
 
 For regression, the simplest option would be the mean (or a weighted mean, if you want to give some models more influence than others)
@@ -9,7 +8,6 @@ For classification, use a (weighted) geometric mean
 If asigning weights to these for some reason, careful not to over-fit.  For example with Kaggle comps, weighting based on CV scores, or public leaderboard scores could do more harm than good.
 
 ### Majority Voting
-
 For a classification problem, a simple method to blend an odd number of classifiers into a majority voting scheme.  This works well with the following characteristics:
 
 - A Diverse collection of algorithms or training data
@@ -37,7 +35,6 @@ For classification problems, the probabilities will be averaged
 For regression problems, the mean prediction will be used.
 
 ## Bagging (Bootstrap Agregating)
-
 This is a technique for use with 'weak' models.  By which we mean models that meet these criteria
 
 - Performance better than random guessing, but not very much better
@@ -91,7 +88,7 @@ pred = clf_bag.predict(X_test)
 # Show the F1-score
 print('F1-Score: {:.3f}'.format(f1_score(y_test, pred)))
 ```
-A the form is the same for bagging of other weak models.  Just intantiate a different base_estimator model.
+The form is the same for bagging of other weak models.  Just instantiate a different `base_estimator` model.
 
 We can also set a parameter `oob_score=True` and the bagging process will set aside some samples, then evaluate on those.  The metric will depend on the type of classifier, but for classification: accuracy, regression: R^2    The result can be accessed with `clf_bag.oob_score_`
 
@@ -110,8 +107,107 @@ Play with these to get better models
 ### Random Forest
 Random forest is just a special case of bagging. Using a large number of small decision trees.  Since scikit-learn provides a built in module, we might as well use this.
 
-## Model Stacking
+## Gradual Learning (Boosting)
+Bagging was using collective learning.  With gradual learning we iteratively improve weak models by learning from the errors of previous ones.  Differenced & similarities are summarised as follows:
 
+|  Collective | Gradual   |
+|---|---|
+|  Wistom of the crowd |  Iterative learning |
+| Independent estimators  | Dependent estimators  |
+| Learning the same task for the same goal | Learning different tasks for the same goal |
+|  Parallel building |  sequential building |
+| Weak base estimators  | Weak base estimators |
+
+With gradual leaning we need to be careful to stop learning before the model starts fitting to noise in the data.  We can try to do this by looking at the characteristics of the errrors, and see if the variance starts to display white noise.
+
+- Errors uncorrelated with input features
+- Errors are unbiased and have consistant variance.
+
+Another stopping metric, a bit simpler to implemtnt could be a measure of improvement between iterationis.  Ie if *performance change* < *improvement threshold* then stop leraning.
+
+Here is an example of one iteration of a home made boosting process:
+
+```python
+# Build and fit linear regression model
+reg_lm = LinearRegression()
+reg_lm.fit(X_train, y_train)
+
+# Calculate the predictions on the test set
+pred = reg_lm.predict(X_test)
+
+# Evaluate the performance using the RMSE
+rmse = np.sqrt(mean_squared_error(pred,y_test))
+print('RMSE: {:.3f}'.format(rmse))
+
+# Now let's do a second iteration:
+
+# Fit a linear regression model to the previous errors
+reg_error = LinearRegression()
+reg_error.fit(X_train_pop, y_train_error)
+
+# Calculate the predicted errors on the test set
+pred_error = reg_error.predict(X_test_pop)
+
+# Evaluate the updated performance
+rmse_error = np.sqrt(mean_squared_error(pred_error, y_test_error))
+print('RMSE: {:.3f}'.format(rmse_error))
+```
+
+This was a somewhat trivial example.  In practice we're more likely to use decision trees for a boosting classifier or regressor.
+
+### Adaptive Boosting (AdaBoost)
+This is a classic, and is still widely used, for both classification and regression.  Was proposed by Yoav Freund and Robert Schapire in 97.  Specific features of Adaboost are:
+
+- Instances are drawn using a sample distribution of the training data (like with bagging) but:
+		- The distribution starts out uniform
+		- Difficult instances are given higher weights
+- The estimators are combined with weighte majority voting, higher weights given to more accurate estimators.
+- It is guarenteed to get better as the ensemble grows, so long as each estimator has an error rate > 0.5.  However eventually it will over-fit.
+- Given the above, there is a trade-off between learning rate and number of estimators.
+
+```python
+from sklearn.ensemble import AdaBoostClassifier
+
+clf_ada = AdaBoostClassifier(base_estimator,  # default: decision tree, depth=1
+							 n_estimateors=100, # default: 50
+							 learning_rate = 1,  # default
+							 random_state = 123
+							)
+```
+
+For regression use `AdaBoostRegressor`,  This has a `loss`  term, by default linear, but could use squre or exponential loss.  Also the decision tree depth by default has a depth of 3.
+
+### Gradient Boosting
+Iteratively build up an ensemble model from the sum of the residual errors from the previous estimators.  This is the equivalent of taking the negative of the partial derivative of the square loss with respect to each extimator, hence the concept of *gradient* boosting.
+$$Loss = {(F_i(X)-y)^2 \over 2 } $$
+Taking the partial derivative derivative of each side:
+$$
+\begin{aligned}
+{\partial Loss \over \partial F_i(X)} &= F_i(X)-y \\
+&= - residual
+\end{aligned}
+$$
+```python
+from sklearn.ensemble import GradientBoostingClassifier as gbm
+
+clf_gbm = gbm(n_estimators=100, # default
+			  learning_rate=0.1 # default
+			  max_depth = 3 # default
+			  min_samples_split 
+			  min_samples_leaf
+			  max_features		  
+)```
+
+For regression use `GradientBoostingRegressor`, the rest is the same.
+
+#### XGBoost
+
+#### LightGBM
+
+#### CatBoost
+
+
+## Model Stacking
 Split the test data into `train_1` & `train_2`.  With `train_1` train a bunch of different models.  
 ```python
 train_1, train_2 = train_test_split(train_ids, test_size=0.5, random_state=123)
